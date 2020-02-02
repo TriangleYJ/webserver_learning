@@ -1,0 +1,28 @@
+doctype html
+head
+    meta(charset='utf-8')
+    title Socket test
+body
+    #log
+script(src='https://ajax.googleapis.com/ajax/libs/jquery/2.2.4/jquery.min.js')
+script(src='socket.io/socket.io.js')
+script.
+    $(() => {
+        let socket = io();
+
+
+        socket.emit("conn", {
+            id : randomID(8)
+        });
+
+
+        function randomID(len) {
+            var name = "";
+            var possible = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXTY_-";
+            for (var i = 0; i < len; i++) {
+                name += possible.charAt(Math.floor(Math.random() * possible.length));
+            }
+            return name;
+        }
+    });
+
