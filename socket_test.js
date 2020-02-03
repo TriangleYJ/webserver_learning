@@ -10,6 +10,9 @@ let data_by_time = 0;
 
 let looper = setInterval(() => {
     data_by_time++;
+    io.emit('timer', {
+        time : data_by_time
+    });
 }, 1000);
 
 app.get('/', (req, res) => {
@@ -34,9 +37,4 @@ io.on('connection', socket => {
         console.log('Client disconnected : ' + socket.id);
     });
 
-});
-
-io.clients((err, clients) => {
-    if(err) throw err;
-    console.log(clients);
 });
