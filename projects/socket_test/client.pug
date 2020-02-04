@@ -10,9 +10,26 @@ script.
     $(() => {
         let socket = io();
 
-        socket.on('timer', function(data){
-            $('#log').text("server running time : " +data.time);
+        let cur_location = window.location.href;
+        let cur_url = new URL(cur_location);
+        let id = cur_url.searchParams.get("id");
+
+        socket.emit("connect_", {});
+
+        socket.emit("req_station_rt", {
+            id: id
+        })
+
+        socket.on("res_station_rt", function (data) {
+            $("#log").text(data.data);
         });
+
+
+
+        //socket.on('timer', function(data){
+        //    $('#log').text("server running time : " +data.time);
+        //});
+
 
 
         function randomID(len) {

@@ -15,6 +15,8 @@ let looper = setInterval(() => {
     });
 }, 1000);
 
+let client_loopers = new Map();
+
 app.get('/', (req, res) => {
     res.render('client');
 });
@@ -25,8 +27,23 @@ server.listen(80, () => {
 
 io.on('connection', socket => {
 
-    socket.on('conn', data => {
+    socket.on('connect_', data => {
         console.log('Client connected : ' + socket.id);
+    });
+
+    socket.on('req_station_rt', data => {
+        let id = parseInt(data.id);
+        let looper = setInterval(() => {
+            //let station_raw = getStationdDataByID(id);
+            //test
+            let station_refined = {
+                data : data_by_time + id
+            }
+            socket.emit('res_station_rt', station_refined);
+            console.log(socket.id + " : " + "emitted");
+        }, 1000);
+
+        client_loopers.set(socket.id, looper);
     });
 
     socket.on('forcedisconnect', () => {
@@ -35,6 +52,10 @@ io.on('connection', socket => {
 
     socket.on('disconnect', () => {
         console.log('Client disconnected : ' + socket.id);
+        if(client_loopers.has(socket.id)){
+            clearInterval(client_loopers.get(socket.id));
+            client_loopers.delete(socket.id)
+        }
     });
 
 });
