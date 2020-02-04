@@ -10,9 +10,8 @@ script.
     $(() => {
         let socket = io();
 
-
-        socket.emit("conn", {
-            name : randomID(8)
+        socket.on('timer', function(data){
+            $('#log').text("server running time : " +data.time);
         });
 
 
