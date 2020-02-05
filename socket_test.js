@@ -2,20 +2,37 @@ const express = require('express');
 const app = express();
 const server = require('http').createServer(app);
 const io = require('socket.io')(server);
+const request = require('request');
 
 app.set('view engine', 'pug');
 app.set('views', 'projects/socket_test');
 
-let data_by_time = 0;
+let server_timer = 0;
 
+//server time counter
 let looper = setInterval(() => {
-    data_by_time++;
-    io.emit('timer', {
-        time : data_by_time
-    });
+    server_timer++;
 }, 1000);
 
 let client_loopers = new Map();
+
+let URLs = {
+    bus_loc : "http://bis.mokpo.go.kr/mp/bis/searchBusRealLocationDetail.do"
+}
+
+function getOpt(url, method, form){
+    return {url, method, form};
+}
+
+function getRouteDataByID(id){
+    let opt = getOpt(URLs.bus_loc, 'POST', {busRouteId : id});
+    let output = {};
+
+    request.post(opt, (err, res, body) => {
+        console.log(body);
+        return JSON.parse(body)['busRealLocList'];
+    });
+}
 
 app.get('/', (req, res) => {
     res.render('client');
@@ -29,17 +46,21 @@ io.on('connection', socket => {
 
     socket.on('connect_', data => {
         console.log('Client connected : ' + socket.id);
+        let routes_raw = getRouteDataByID(324000001);
     });
 
     socket.on('req_station_rt', data => {
         let id = parseInt(data.id);
         let looper = setInterval(() => {
-            //let station_raw = getStationdDataByID(id);
-            //test
-            let station_refined = {
-                data : data_by_time + id
+            //let routes_raw = getRouteDataByID(id);
+            let routes_ref = [];
+            for(let i of routes_raw){
+                let {angle, event_type, operation_status, speed, stop_id} = i;
+                routes_ref.push({angle, event_type, operation_status, speed, stop_id});
             }
-            socket.emit('res_station_rt', station_refined);
+
+            console.log(JSON.stringify(routes_ref));
+            socket.emit('res_station_rt', routes_ref);
             console.log(socket.id + " : " + "emitted");
         }, 1000);
 
@@ -57,5 +78,4 @@ io.on('connection', socket => {
             client_loopers.delete(socket.id)
         }
     });
-
 });
