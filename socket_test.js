@@ -18,13 +18,13 @@ let client_loopers = new Map();
 
 let URLs = {
     bus_loc : "http://bis.mokpo.go.kr/mp/bis/searchBusRealLocationDetail.do"
-}
+};
 
 function getOpt(url, method, form){
     return {url, method, form};
 }
 
-function getRouteDataByID(id){
+/*function getRouteDataByID(id){
     let opt = getOpt(URLs.bus_loc, 'POST', {busRouteId : id});
     let output = {};
 
@@ -32,7 +32,7 @@ function getRouteDataByID(id){
         console.log(body);
         return JSON.parse(body)['busRealLocList'];
     });
-}
+}*/
 
 app.get('/', (req, res) => {
     res.render('client');
@@ -46,22 +46,25 @@ io.on('connection', socket => {
 
     socket.on('connect_', data => {
         console.log('Client connected : ' + socket.id);
-        let routes_raw = getRouteDataByID(324000001);
     });
 
     socket.on('req_station_rt', data => {
         let id = parseInt(data.id);
+        let opt = getOpt(URLs.bus_loc, 'POST', {busRouteId : id});
         let looper = setInterval(() => {
-            //let routes_raw = getRouteDataByID(id);
-            let routes_ref = [];
-            for(let i of routes_raw){
-                let {angle, event_type, operation_status, speed, stop_id} = i;
-                routes_ref.push({angle, event_type, operation_status, speed, stop_id});
-            }
 
-            console.log(JSON.stringify(routes_ref));
-            socket.emit('res_station_rt', routes_ref);
-            console.log(socket.id + " : " + "emitted");
+            request.post(opt, (err, res, body) => {
+                let routes_raw = JSON.parse(body)['busRealLocList'];
+
+                let routes_ref = [];
+                for(let i of routes_raw) {
+                    let {angle, event_type, operation_status, speed, stop_id} = i;
+                    routes_ref.push({angle, event_type, operation_status, speed, stop_id});
+                }
+
+                socket.emit('res_station_rt', routes_ref);
+                console.log(socket.id + " : " + "emitted");
+            });
         }, 1000);
 
         client_loopers.set(socket.id, looper);

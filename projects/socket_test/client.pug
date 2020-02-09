@@ -21,7 +21,13 @@ script.
         })
 
         socket.on("res_station_rt", function (data) {
-            $("#log").text(data.data);
+            let return_content = "";
+            for(let i of data){
+                let return_line = `angle : ${i.angle} event_type : ${i.event_type} operation_status : ${i.operation_status} speed : ${i.speed} stop_id : ${i.stop_id}<br>`;
+                return_content += return_line;
+            }
+            $("#log").html(return_content);
+            console.log("received data from server");
         });
 
 
