@@ -24,15 +24,6 @@ function getOpt(url, method, form){
     return {url, method, form};
 }
 
-/*function getRouteDataByID(id){
-    let opt = getOpt(URLs.bus_loc, 'POST', {busRouteId : id});
-    let output = {};
-
-    request.post(opt, (err, res, body) => {
-        console.log(body);
-        return JSON.parse(body)['busRealLocList'];
-    });
-}*/
 
 app.get('/', (req, res) => {
     res.render('client');
@@ -52,18 +43,23 @@ io.on('connection', socket => {
         let id = parseInt(data.id);
         let opt = getOpt(URLs.bus_loc, 'POST', {busRouteId : id});
         let looper = setInterval(() => {
-
             request.post(opt, (err, res, body) => {
                 let routes_raw = JSON.parse(body)['busRealLocList'];
 
                 let routes_ref = [];
                 for(let i of routes_raw) {
                     let {angle, event_type, operation_status, speed, stop_id} = i;
-                    routes_ref.push({angle, event_type, operation_status, speed, stop_id});
+                    routes_ref.push({angle, event_type, speed, stop_id});
                 }
 
-                socket.emit('res_station_rt', routes_ref);
-                console.log(socket.id + " : " + "emitted");
+                if(socket.prev_data !== undefined){
+                    if(JSON.stringify(routes_ref) !== socket.prev_data){
+                        socket.emit('res_station_rt', routes_ref);
+                        console.log(server_timer, " : ", socket.id + " : " + "emitted");
+                    }
+                }
+
+                socket.prev_data = JSON.stringify(routes_ref);
             });
         }, 1000);
 
