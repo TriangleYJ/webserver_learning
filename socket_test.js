@@ -37,6 +37,7 @@ io.on('connection', socket => {
 
     socket.on('connect_', data => {
         console.log('Client connected : ' + socket.id);
+        socket.prev_data = "";
     });
 
     socket.on('req_station_rt', data => {
@@ -44,22 +45,64 @@ io.on('connection', socket => {
         let opt = getOpt(URLs.bus_loc, 'POST', {busRouteId : id});
         let looper = setInterval(() => {
             request.post(opt, (err, res, body) => {
-                let routes_raw = JSON.parse(body)['busRealLocList'];
+                if(!err) {
+                    let routes_raw = JSON.parse(body)['busRealLocList'];
 
-                let routes_ref = [];
-                for(let i of routes_raw) {
-                    let {angle, event_type, operation_status, speed, stop_id} = i;
-                    routes_ref.push({angle, event_type, speed, stop_id});
-                }
+                    let routes_ref = {};
+                    for (let i of routes_raw) {
+                        //veh_id = 0, angle = 1, lat = 2 ...
+                        /*
+                        event type = 1 (정류장에서 출발) 2 (정류장 도착) 3(교차로 통과)
+                        turn_flag = 'DW' : 하행 else : 상행, 순환
+                        route_type = 11 : 광역 else : 일반
+                        low_flag = 1 : 저상 else : 일반
+                        turn_useflag = 1 : 비순환 else : 순환
+                         */
 
-                if(socket.prev_data !== undefined){
-                    if(JSON.stringify(routes_ref) !== socket.prev_data){
+                        let {veh_id, angle, lat, lng, event_type, speed, stop_id, plate_no, turn_flag, route_type, low_flag, turn_useflag} = i;
+                        routes_ref[veh_id] = [angle, lat, lng, event_type, speed, stop_id, plate_no, turn_flag, route_type, low_flag, turn_useflag];
+                    }
+
+                    //data encapsulate
+                    //send data : {veh_1 : [[1, 3], [3,10000007]], veh_2 : [[1,2], [2, 50]], veh_3 : null, veh_4 : [1,2,3,4,....]} (example, the most simplified emit data)
+
+                    let prev_data_parsed = JSON.parse(socket.prev_data);
+                    socket.prev_data = JSON.stringify(routes_ref);
+                    let routes_ref_encap = {};
+
+                    for(let i in routes_ref){
+                        let item = routes_ref[i];
+                        if(prev_data_parsed.hasOwnProperty(i)){
+                            // 변경
+                            let prev_item = prev_data_parsed[i];
+                            let changed_list = [];
+                            for(let k in item){
+                                if(item[k] !== prev_item[k]){
+                                    changed_list.push([k, item]);
+                                }
+                            }
+                            routes_ref_encap[i] = changed_list;
+
+                            delete prev_data_parsed[i];
+                        } else {
+                            // 신규
+                            routes_ref_encap[i] = item;
+                        }
+                    }
+
+                    for(let j in prev_data_parsed){ // 제거
+                        routes_ref_encap[j] = null;
+                    }
+
+                    socket.emit('res_station_rt_encap', routes_ref_encap);
+                    console.log(server_timer, " : ", socket.id, " : ", JSON.stringify(routes_ref_encap));
+                    /*if (JSON.stringify(routes_ref) !== socket.prev_data) {
                         socket.emit('res_station_rt', routes_ref);
                         console.log(server_timer, " : ", socket.id + " : " + "emitted");
-                    }
-                }
+                    }*/
 
-                socket.prev_data = JSON.stringify(routes_ref);
+
+                }
             });
         }, 1000);
 

@@ -14,13 +14,15 @@ script.
         let cur_url = new URL(cur_location);
         let id = cur_url.searchParams.get("id");
 
+        let routes = {};
+
         socket.emit("connect_", {});
 
         socket.emit("req_station_rt", {
             id: id
         })
 
-        socket.on("res_station_rt", function (data) {
+        /*socket.on("res_station_rt", function (data) {
             let return_content = "";
             for(let i of data){
                 let return_line = `angle : ${i.angle} event_type : ${i.event_type} speed : ${i.speed} stop_id : ${i.stop_id}<br>`;
@@ -28,6 +30,18 @@ script.
             }
             $("#log").html(return_content);
             console.log("received data from server");
+        });*/
+
+        socket.on("res_station_rt_encap", function(data) {
+            let sequence = ['angle', 'lat', 'lng', 'event_type', 'speed', 'stop_id', 'plate_no', 'turn_flag', 'route_type', 'low_flag', 'turn_useflag'];
+
+            //send data : {veh_1 : [[1, 3], [3,10000007]], veh_2 : [[1,2], [2, 50]], veh_3 : null, veh_4 : [1,2,3,4,....]} (example, the most simplified emit data)
+            for(let i in data){
+                let item = data[i];
+                if(item === null) if(routes.hasOwnProperty(i)) delete routes[i]; // 제거
+                else if(typeof item[0] === 'number') for(let j in item) routes[i][sequence[j]] = item[j]; // 추가
+                else for(let j of item) routes[i][sequence[j[0]]] = j[1]; // 변경
+            }
         });
 
 
