@@ -37,7 +37,7 @@ io.on('connection', socket => {
 
     socket.on('connect_', data => {
         console.log('Client connected : ' + socket.id);
-        socket.prev_data = "";
+        socket.prev_data = "{}";
     });
 
     socket.on('req_station_rt', data => {
@@ -78,10 +78,10 @@ io.on('connection', socket => {
                             let changed_list = [];
                             for(let k in item){
                                 if(item[k] !== prev_item[k]){
-                                    changed_list.push([k, item]);
+                                    changed_list.push([k, item[k]]);
                                 }
                             }
-                            routes_ref_encap[i] = changed_list;
+                            if(changed_list.length !== 0) routes_ref_encap[i] = changed_list;
 
                             delete prev_data_parsed[i];
                         } else {
@@ -94,8 +94,12 @@ io.on('connection', socket => {
                         routes_ref_encap[j] = null;
                     }
 
-                    socket.emit('res_station_rt_encap', routes_ref_encap);
-                    console.log(server_timer, " : ", socket.id, " : ", JSON.stringify(routes_ref_encap));
+                    routes_ref_encap_str = JSON.stringify(routes_ref_encap);
+                    if(routes_ref_encap_str !== "{}"){
+                        socket.emit('res_station_rt_encap', routes_ref_encap);
+                        console.log(server_timer, " : ", socket.id, " : ", routes_ref_encap_str);
+                    }
+
                     /*if (JSON.stringify(routes_ref) !== socket.prev_data) {
                         socket.emit('res_station_rt', routes_ref);
                         console.log(server_timer, " : ", socket.id + " : " + "emitted");

@@ -18,9 +18,7 @@ script.
 
         socket.emit("connect_", {});
 
-        socket.emit("req_station_rt", {
-            id: id
-        })
+        socket.emit("req_station_rt", {id});
 
         /*socket.on("res_station_rt", function (data) {
             let return_content = "";
@@ -38,10 +36,28 @@ script.
             //send data : {veh_1 : [[1, 3], [3,10000007]], veh_2 : [[1,2], [2, 50]], veh_3 : null, veh_4 : [1,2,3,4,....]} (example, the most simplified emit data)
             for(let i in data){
                 let item = data[i];
-                if(item === null) if(routes.hasOwnProperty(i)) delete routes[i]; // 제거
-                else if(typeof item[0] === 'number') for(let j in item) routes[i][sequence[j]] = item[j]; // 추가
-                else for(let j of item) routes[i][sequence[j[0]]] = j[1]; // 변경
+                if(item == null){ // 제거
+                    if(routes.hasOwnProperty(i)){
+                        delete routes[i];
+                    }
+                }
+                else if(typeof item[0] === 'string') { // 추가
+                    routes[i] = {};
+                    for (let j in item){
+                        routes[i][sequence[j]] = item[j];
+
+                    }
+                }
+                else{ // 변경
+                    for(let j of item){
+                        routes[i][sequence[j[0]]] = j[1];
+                    }
+                }
             }
+            //showing code should be added.
+
+            console.log(JSON.stringify(routes));
+
         });
 
 
