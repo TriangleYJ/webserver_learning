@@ -7,6 +7,7 @@ const request = require('request');
 app.set('view engine', 'pug');
 app.set('views', 'projects/socket_test');
 
+const port_num = process.env.PORT || 80;
 let server_timer = 0;
 
 //server time counter
@@ -42,8 +43,8 @@ app.get('/:id', (req, res) => {
     });
 });
 
-server.listen(80, () => {
-    console.log('server running on 80 port');
+server.listen(port_num, () => {
+    console.log('server running on ' + port_num +' port');
 });
 
 io.on('connection', socket => {
